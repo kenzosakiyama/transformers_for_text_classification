@@ -1,5 +1,5 @@
 from transformers import PreTrainedModel
-from typing import Dict, Callable, Iterable
+from typing import Dict, Callable, Iterable, Union
 from torch.utils.data import DataLoader
 import torch
 import torch.nn as nn
@@ -13,11 +13,13 @@ class BaseTransformerModel(nn.Module):
 
     def __init__(self, transformer: PreTrainedModel,
                        metrics: Dict[str, Callable[[Real, Prediction], float]],
+                       device: Union[str, torch.device] = "cpu",
                        freeze_layers: bool = False):
 
         super(BaseTransformerModel, self).__init__()
 
         self.transformer_encoder = transformer
+        self.device = device
         self.metrics = metrics
 
         if freeze_layers:
@@ -38,9 +40,7 @@ class BaseTransformerModel(nn.Module):
         raise NotImplementedError("Forward not implemented.")
 
     def evaluate(self, eval_dl: DataLoader, 
-                        criterion: torch.nn,
-                        cuda: bool = False,
-                        device: torch.device = torch.device("cpu:0")) -> None:
+                        criterion: torch.nn) -> None:
         # evaluate
         self.eval()
 
@@ -52,8 +52,7 @@ class BaseTransformerModel(nn.Module):
 
             for input_batch in eval_dl:
 
-                if cuda:
-                    input_batch = [x.cuda(device) for x in input_batch]
+                input_batch = [x.to(self.device) for x in input_batch]
 
                 input_ids, att_masks, labels = input_batch
 
@@ -82,9 +81,7 @@ class BaseTransformerModel(nn.Module):
                     test_dl: DataLoader,
                     criterion: torch.nn,
                     optimizer: torch.optim,
-                    scheduler: torch.optim.lr_scheduler = None,
-                    cuda: bool = False, 
-                    device: torch.device = torch.device("cpu:0")):
+                    scheduler: torch.optim.lr_scheduler = None):
 
         train_losses = []
         eval_losses = []
@@ -98,8 +95,7 @@ class BaseTransformerModel(nn.Module):
 
             for batch_input in tqdm(train_dl, total=batches, desc="- Remaining batches"):
 
-                if cuda:
-                    batch_input = [x.cuda(device) for x in batch_input]
+                batch_input = [x.to(self.device) for x in batch_input]
 
                 input_ids, att_masks, labels = batch_input
 
@@ -122,7 +118,7 @@ class BaseTransformerModel(nn.Module):
 
             # evaluate
             tqdm.write(f"Epoch: {epoch+1}")
-            _, eval_loss = self.evaluate(test_dl, criterion, cuda, device)
+            _, eval_loss = self.evaluate(test_dl, criterion)
 
             train_losses.append(train_loss)
             eval_losses.append(eval_loss)

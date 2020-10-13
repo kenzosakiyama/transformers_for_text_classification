@@ -6,9 +6,10 @@ class BertForClassification(BaseTransformerModel):
     def __init__(self, bert_model: BertModel,
                        classes: int,
                        metrics: Dict[str, Callable[[Real, Prediction], float]],
-                       custom_head: nn.Sequential = None):
+                       custom_head: nn.Sequential = None,
+                       device: Union[str, torch.device] = "cpu"):
 
-        super().__init__(bert_model, metrics)
+        super().__init__(bert_model, metrics, device=device)
 
         if custom_head is not None:
             self.classifier = custom_head

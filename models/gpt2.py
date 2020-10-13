@@ -7,9 +7,10 @@ class GPT2ForClassification(BaseTransformerModel):
                        max_seq_len: int,
                        classes: int,
                        metrics: Dict[str, Callable[[Real, Prediction], float]],
-                       dropout: float = 0.1):
+                       dropout: float = 0.1,
+                       device: Union[str, torch.device] = "cpu"):
 
-        super().__init__(gpt2_model, metrics)
+        super().__init__(gpt2_model, metrics, device=device)
         concat_features = gpt2_model.config.n_embd * max_seq_len
         self.dropout = nn.Dropout(dropout)
         self.classifier = nn.Linear(concat_features, classes)
