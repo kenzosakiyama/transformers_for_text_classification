@@ -31,8 +31,6 @@ class TextDataset(Dataset):
 
     def __getitem__(self, i):
 
-        # Tokenization on demand
-
         tokens = self.tokenizer.encode_plus(
             self.texts[i],
             max_length = self.max_seq_len,
