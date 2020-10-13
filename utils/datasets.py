@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
-from typing import Iterable, Dict, Callable
-from transformers import PreTrainedTokenizerFast, BertForTokenClassification
+from typing import Iterable, Callable
+from transformers import PreTrainedTokenizerFast
 import torch
 
 class TextDataset(Dataset):

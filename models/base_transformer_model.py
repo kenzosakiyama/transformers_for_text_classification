@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 
 Real = Prediction = Iterable[float]
 
@@ -89,7 +89,7 @@ class BaseTransformerModel(nn.Module):
         train_losses = []
         eval_losses = []
 
-        for epoch in range(epochs):
+        for epoch in tqdm(range(epochs), desc="Epochs"):
             # train
             self.train()
             batch_losses = []
