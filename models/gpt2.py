@@ -4,12 +4,14 @@ from transformers import GPT2Model
 class GPT2ForClassification(BaseTransformerModel):
 
     def __init__(self, gpt2_model: GPT2Model, 
-                       metrics: Dict[str, Callable[[Real, Prediction], float]],
                        max_seq_len: int,
-                       classes: int):
+                       classes: int,
+                       metrics: Dict[str, Callable[[Real, Prediction], float]],
+                       dropout: float = 0.1):
 
         super().__init__(gpt2_model, metrics)
         concat_features = gpt2_model.config.n_embd * max_seq_len
+        self.dropout = nn.Dropout(dropout)
         self.classifier = nn.Linear(concat_features, classes)
 
 
@@ -25,6 +27,6 @@ class GPT2ForClassification(BaseTransformerModel):
         # É possível tentar outras abordagens para sumarizar todos os hidden states
         features = self.concatenate_hidden_states(hidden_states, batch_size)
         # print(features.shape) Descobrindo dimensões no gambito
-        output = self.classifier(features)
+        output = self.classifier(self.dropout(features))
 
         return output 

@@ -1,4 +1,3 @@
-from torch.optim.lr_scheduler import OneCycleLR
 from transformers import PreTrainedModel
 from typing import Dict, Callable, Iterable
 from torch.utils.data import DataLoader
@@ -28,7 +27,11 @@ class BaseTransformerModel(nn.Module):
 
         for param in self.transformer_encoder.parameters():
             param.requires_grad = False
+    
+    def unfreeze_layers(self) -> None:
 
+        for param in self.transformer_encoder.parameters():
+            param.requires_grad = True
 
     def forward(self, input_ids, att_masks):
 
@@ -70,7 +73,7 @@ class BaseTransformerModel(nn.Module):
 
             mean_loss = np.mean(batch_losses)
 
-            print(f"\ttrain_loss: {self.last_train_loss} // test_loss: {mean_loss}// metrics: {str(results)}")
+            tqdm.write(f"\ttrain_loss: {self.last_train_loss} // test_loss: {mean_loss}// metrics: {str(results)}\n")
 
         return preds, mean_loss
 
@@ -79,22 +82,19 @@ class BaseTransformerModel(nn.Module):
                     test_dl: DataLoader,
                     criterion: torch.nn,
                     optimizer: torch.optim,
+                    scheduler: torch.optim.lr_scheduler = None,
                     cuda: bool = False, 
                     device: torch.device = torch.device("cpu:0")):
 
         train_losses = []
         eval_losses = []
 
-        batches = len(train_dl)
-
-        # TODO: Permitir a customização do scheduler!
-        scheduler = OneCycleLR(optimizer, max_lr=1e-5, steps_per_epoch=batches, epochs=epochs)
-
         for epoch in range(epochs):
-            print(f"Epoch: {epoch+1}")
             # train
             self.train()
             batch_losses = []
+
+            batches = len(train_dl)
 
             for batch_input in tqdm(train_dl, total=batches, desc="- Remaining batches"):
 
@@ -112,7 +112,8 @@ class BaseTransformerModel(nn.Module):
                 loss.backward()
                 
                 optimizer.step()
-                scheduler.step()
+
+                if scheduler is not None: scheduler.step()
 
                 batch_losses.append(loss.item())
         
@@ -120,6 +121,7 @@ class BaseTransformerModel(nn.Module):
             self.last_train_loss = train_loss
 
             # evaluate
+            tqdm.write(f"Epoch: {epoch+1}")
             _, eval_loss = self.evaluate(test_dl, criterion, cuda, device)
 
             train_losses.append(train_loss)
