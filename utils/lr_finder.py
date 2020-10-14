@@ -73,7 +73,7 @@ class TransformerLRFinder(LRFinder):
         return total_loss.item()
 
 def run_lr_finder(train_dl: torch.utils.data.DataLoader,
-                  model: nn.Modulue,
+                  model: nn.Module,
                   optimizer: torch.optim,
                   criterion: nn.Module,
                   device: Union[str, torch.device] = "cpu",
