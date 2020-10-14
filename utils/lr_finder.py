@@ -1,4 +1,8 @@
 from torch_lr_finder import LRFinder, TrainDataLoaderIter
+import matplotlib.pyplot as plt
+from typing import Union
+import torch
+import torch.nn as nn
 
 try:
     from apex import amp
@@ -68,6 +72,18 @@ class TransformerLRFinder(LRFinder):
 
         return total_loss.item()
 
-def run_lr_finder():
-    # TODO: implementar...
-    pass
+def run_lr_finder(train_dl: torch.utils.data.Dataloader,
+                  model: nn.Modulue,
+                  optimizer: torch.optim,
+                  criterion: nn.Module,
+                  device: Union[str, torch.device] = "cpu",
+                  end_lr: int = 10,
+                  num_iter: int = 100,
+                  save_plot: bool = False
+                  ) -> None:
+
+    lr_finder = TransformerLRFinder(model, optimizer, criterion, device=device)
+    lr_finder.range_test(TextDataLoaderIter(train_dl), end_lr=end_lr, num_iter=num_iter)
+    lr_finder.plot()
+    if save_plot: plt.savefig("lr_finder.png")
+    lr_finder.reset()
