@@ -23,17 +23,12 @@ class BaseTransformerModel(nn.Module):
         self.metrics = metrics
 
         if freeze_layers:
-            self.freeze_layers()
+            self.update_parameters(False)
     
-    def freeze_layers(self) -> None:
+    def update_parameters(self, update: bool) -> None:
 
         for param in self.transformer_encoder.parameters():
-            param.requires_grad = False
-    
-    def unfreeze_layers(self) -> None:
-
-        for param in self.transformer_encoder.parameters():
-            param.requires_grad = True
+            param.requires_grad = update
 
     def forward(self, input_ids, att_masks):
 

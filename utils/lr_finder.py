@@ -23,6 +23,7 @@ class TextDataLoaderIter(TrainDataLoaderIter):
         # returning Tuple[inputs, labels]
         return (input_ids, att_masks), labels
 
+
 class TransformerLRFinder(LRFinder):
 
     def __init__(self, *args, **kargs):
@@ -80,10 +81,12 @@ def run_lr_finder(train_dl: torch.utils.data.DataLoader,
                   end_lr: int = 10,
                   num_iter: int = 100,
                   save_plot: bool = False
-                  ) -> None:
+                  ) -> TransformerLRFinder:
 
     lr_finder = TransformerLRFinder(model, optimizer, criterion, device=device)
     lr_finder.range_test(TextDataLoaderIter(train_dl), end_lr=end_lr, num_iter=num_iter)
     lr_finder.plot()
     if save_plot: plt.savefig("lr_finder.png")
     lr_finder.reset()
+
+    return lr_finder
