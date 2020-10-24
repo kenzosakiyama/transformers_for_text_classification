@@ -11,17 +11,36 @@ class BertForClassification(BaseTransformerModel):
 
         super().__init__(bert_model, metrics, device=device)
 
+        self.max_seq_len = 128 # TODO: remover em caso de resultado positivo
+        concat_features = bert_model.config.hidden_size * self.max_seq_len
+
         if custom_head is not None:
             self.classifier = custom_head
         else:
             self.classifier = nn.Sequential(
-                nn.Dropout(bert_model.config.hidden_dropout_prob),
-                nn.Linear(bert_model.config.hidden_size, classes)
+                nn.Dropout(0.1),
+                nn.Linear(concat_features, classes)
             )
+
+    # Original
+    # def forward(self, input_ids, att_masks):
+        
+    #     outputs = self.transformer_encoder(input_ids, att_masks)
+    #     pooled_outputs = outputs[1]
+
+    #     return self.classifier(pooled_outputs)
+
+    def concatenate_hidden_states(self, hidden_states: torch.Tensor, bs: int):
+
+        return hidden_states.view(bs, -1)
 
     def forward(self, input_ids, att_masks):
         
         outputs = self.transformer_encoder(input_ids, att_masks)
-        pooled_outputs = outputs[1]
+        hidden_states = outputs[0]
+        batch_size = hidden_states.shape[0]
 
-        return self.classifier(pooled_outputs)
+        features = self.concatenate_hidden_states(hidden_states, batch_size)
+
+        return self.classifier(features)
+
