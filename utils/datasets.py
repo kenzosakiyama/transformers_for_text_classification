@@ -34,7 +34,7 @@ class TextDataset(Dataset):
         tokens = self.tokenizer.encode_plus(
             self.texts[i],
             max_length = self.max_seq_len,
-            pad_to_max_length=True,
+            padding="max_length",
             truncation=True,
             return_token_type_ids=False,
             return_tensors="pt"
