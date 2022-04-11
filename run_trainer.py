@@ -167,14 +167,3 @@ if __name__ == "__main__":
     trainer.add_callback(es_callback)
 
     trainer.train()
-
-
-
-    
-
-
-
-
-
-
-
