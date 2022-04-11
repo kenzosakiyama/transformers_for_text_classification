@@ -104,6 +104,7 @@ if __name__ == "__main__":
     parser.add_argument("--wd", type=float, default=1e-2, help="Weight decay.")
     parser.add_argument("--text_col", type=str, default="text", help="Column containing the text examples.")
     parser.add_argument("--label_col", type=str, default="label", help="Column containing the labels.")
+    parser.add_argument("--save_test_preds", type=str, default=None, help="Path to save test predictions.")
 
     args = parser.parse_args()
 
@@ -120,7 +121,7 @@ if __name__ == "__main__":
 
     print(f"- Loading model and tokenizer ({args.model_name})")
     tokenizer = BertTokenizerFast.from_pretrained(args.model_name)
-    model = BertForSequenceClassification.from_pretrained(args.model_name, num_labels=len(label_encoder.classes_))
+    model = BertForSequenceClassification.from_pretrained("/home/kenzosaki/mestrado/data/VICTOR/checkpoints/checkpoint-149136", num_labels=len(label_encoder.classes_))
 
     print(f"\t- Tokenizing data.")
     train_ds = tokenize_inputs(train_ds, args.text_col, tokenizer)
@@ -164,6 +165,16 @@ if __name__ == "__main__":
         data_collator=collator
     )
 
-    trainer.add_callback(es_callback)
+    # trainer.add_callback(es_callback)
 
-    trainer.train()
+    # trainer.train()
+
+    if args.save_test_preds:
+        print(f"- Saving predictions to {args.save_test_preds}")
+
+        preds = trainer.predict(test_ds)
+        y_pred = preds["predictions"]
+
+        test_df = pd.read_csv(args.test_file)
+        test_df["prediction"] = label_encoder.inverse_transform(y_pred)
+        test_df.to_csv(args.save_test_preds)
