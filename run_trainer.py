@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
     print(f"- Loading model and tokenizer ({args.model_name})")
     tokenizer = BertTokenizerFast.from_pretrained(args.model_name)
-    model = BertForSequenceClassification.from_pretrained("/home/kenzosaki/mestrado/data/VICTOR/checkpoints/checkpoint-149136", num_labels=len(label_encoder.classes_))
+    model = BertForSequenceClassification.from_pretrained(args.model_name, num_labels=len(label_encoder.classes_))
 
     print(f"\t- Tokenizing data.")
     train_ds = tokenize_inputs(train_ds, args.text_col, tokenizer)
@@ -165,9 +165,9 @@ if __name__ == "__main__":
         data_collator=collator
     )
 
-    # trainer.add_callback(es_callback)
+    trainer.add_callback(es_callback)
 
-    # trainer.train()
+    trainer.train()
 
     if args.save_test_preds:
         print(f"- Saving predictions to {args.save_test_preds}")
@@ -175,7 +175,6 @@ if __name__ == "__main__":
         preds = trainer.predict(test_ds)
         y_pred = np.argmax(preds[0], axis=1)
 
-
-        test_df = pd.read_csv(args.test_file)
+        test_df = pd.read_csv(args.test_file, index_col=0).dropna()
         test_df["prediction"] = label_encoder.inverse_transform(y_pred)
         test_df.to_csv(args.save_test_preds)
