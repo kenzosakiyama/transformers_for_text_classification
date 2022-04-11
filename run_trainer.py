@@ -173,7 +173,8 @@ if __name__ == "__main__":
         print(f"- Saving predictions to {args.save_test_preds}")
 
         preds = trainer.predict(test_ds)
-        y_pred = preds["predictions"]
+        y_pred = np.argmax(preds[0], axis=1)
+
 
         test_df = pd.read_csv(args.test_file)
         test_df["prediction"] = label_encoder.inverse_transform(y_pred)
