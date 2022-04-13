@@ -13,10 +13,12 @@ import spacy
 import numpy as np
 import math
 
+
 SVM_PARAMS = {
    "kernel": "linear", 
    "class_weight": "balanced",
-   "random_state": 1234
+   "random_state": 1234,
+   "verbose": True
 }
 
 TFIDF_PARAMS = {
@@ -51,7 +53,7 @@ def load_train_test_data(train_path: str,
 
     return (label_encoder, train_df, test_df)
 
-def apply_preprocessing_pipeline(text: str, use_lemmatization: bool = True, nlp: spacy.lang = None) -> Iterable[str]:
+def apply_preprocessing_pipeline(text: str, use_lemmatization: bool = True, remove_stopwords: bool = True, nlp: spacy.lang = None) -> Iterable[str]:
 
     if nlp is None: nlp = spacy.load("pt_core_news_md") # Carrega modelo do spaCy básico
     if len(text) > nlp.max_length: text = text[:nlp.max_length]
@@ -62,10 +64,10 @@ def apply_preprocessing_pipeline(text: str, use_lemmatization: bool = True, nlp:
     for token in tokens:
 
         lemma = token.lemma_
-        if token.is_stop: continue              # remoção de stop-words
+        if token.is_stop and remove_stopwords: continue # remoção de stop-words
         if token.is_punct: continue             # remoção de pontuação
         if len(lemma.strip()) == 0: continue    # ignorar tokens "vazios"
-        if token.ent_type_ == "PER": continue   # remoção de nomes próprios usando NER
+        # if token.ent_type_ == "PER": continue   # remoção de nomes próprios usando NER
         if token.pos_ == "NUM": continue        # remoção de números e datas usando POS tag
         if lemma.count(".") > 1: continue       # remoção de datas no formato DD.MM.AA
         # if "unâni" in lemma.lower() or "unani" in lemma.lower(): continue   # remoção de palavras frequentes como "unanime" e "unanimamente" 
@@ -76,13 +78,19 @@ def apply_preprocessing_pipeline(text: str, use_lemmatization: bool = True, nlp:
     
     return final_tokens
 
-def load_vectorizer(nlp):
+def load_vectorizer(nlp, remove_stopwords: bool, use_lemmatization: bool):
 
     global TFIDF_PARAMS
 
+    print(f"Loading vectorizer using:")
+    print(f"\t- Use lemmatization: {use_lemmatization}")
+    print(f"\t- Remove stop words: {remove_stopwords}")
+    print(f"\t- Remaining args: {TFIDF_PARAMS}")
+
     tok_func = partial(apply_preprocessing_pipeline, 
                        nlp=nlp,
-                       use_lemmatization=True)
+                       use_lemmatization=use_lemmatization,
+                       remove_stopwords=remove_stopwords)
 
     TFIDF_PARAMS["tokenizer"] = tok_func
 
@@ -95,6 +103,8 @@ if __name__ == "__main__":
     parser.add_argument("--train_file", type=str, required=True, help="Path to the train CSV file.")
     parser.add_argument("--test_file", type=str, required=True, help="Path to the test CSV file.")
 
+    parser.add_argument("--remove_stopwords", action="store_true", help="Wether remove or not the stopwords from the text.")
+    parser.add_argument("--use_lemma", action="store_true", help="Wether use or not lemmatization.")
     parser.add_argument("--text_col", type=str, default="text", help="Column containing the text examples.")
     parser.add_argument("--label_col", type=str, default="label", help="Column containing the labels.")
     parser.add_argument("--save_test_preds", type=str, default=None, help="Path to save test predictions.")
@@ -115,7 +125,7 @@ if __name__ == "__main__":
     print(f"- Loading model and vectorizer:")
 
     nlp = spacy.load("pt_core_news_md")
-    vectorizer = load_vectorizer(nlp)
+    vectorizer = load_vectorizer(nlp, args.remove_stopwords, args.use_lemma)
     svc = SVC(**SVM_PARAMS)
 
     train_x = vectorizer.fit_transform(train_df[args.text_col])
