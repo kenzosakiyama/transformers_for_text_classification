@@ -125,6 +125,10 @@ if __name__ == "__main__":
     tokenizer = BertTokenizerFast.from_pretrained(args.model_name)
     model = BertForSequenceClassification.from_pretrained(args.model_name, num_labels=len(label_encoder.classes_))
 
+    # Saving id label mapping.
+    model.config.id2label = { i: label for i, label in enumerate(label_encoder.classes_) }
+    model.config.label2id = { label: i for i, label in enumerate(label_encoder.classes_) }
+
     # Opcional, classification_head com mais de uma camada.
     import torch.nn as nn
     classifier_head = nn.Sequential(
