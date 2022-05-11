@@ -78,7 +78,8 @@ def compute_metrics(eval_pred):
         "accuracy": metrics_dict["accuracy"],
         "precision": metrics_dict["macro avg"]["precision"],
         "recall": metrics_dict["macro avg"]["recall"],
-        "f1": metrics_dict["macro avg"]["f1-score"]
+        "f1": metrics_dict["macro avg"]["f1-score"],
+        "weighted_f1": metrics_dict["weighted avg"]["f1-score"]
     }
 
 def get_collator(tokenizer: BertTokenizerFast,
@@ -101,6 +102,7 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_dir", type=str, help="Path to store the model checkpoints.")
 
     parser.add_argument("--patience", type=int, default=5, help="Number of epochs of patience. Used for early-stopping.")
+    parser.add_argument("--criterion", type=str, default="f1", help="Evaluation metric to check during the early stopping callback.")
     parser.add_argument("--wd", type=float, default=1e-2, help="Weight decay.")
     parser.add_argument("--text_col", type=str, default="text", help="Column containing the text examples.")
     parser.add_argument("--label_col", type=str, default="label", help="Column containing the labels.")
@@ -122,6 +124,17 @@ if __name__ == "__main__":
     print(f"- Loading model and tokenizer ({args.model_name})")
     tokenizer = BertTokenizerFast.from_pretrained(args.model_name)
     model = BertForSequenceClassification.from_pretrained(args.model_name, num_labels=len(label_encoder.classes_))
+
+    # Opcional, classification_head com mais de uma camada.
+    import torch.nn as nn
+    classifier_head = nn.Sequential(
+        nn.Linear(768, 1536),
+        nn.Tanh(),
+        nn.Linear(1536, 1536),
+        nn.Tanh(),
+        nn.Linear(1536, len(label_encoder.classes_))
+    )
+    model.classifier = classifier_head
 
     print(f"\t- Tokenizing data.")
     train_ds = tokenize_inputs(train_ds, args.text_col, tokenizer)
@@ -147,7 +160,7 @@ if __name__ == "__main__":
         logging_dir=args.checkpoint_dir,                                                                                 # directory for storing logs
         save_strategy="epoch",                                                                                # checkpoint save interval
         logging_steps=500,
-        metric_for_best_model="f1",
+        metric_for_best_model=args.criterion,
         load_best_model_at_end=True
     )
 
@@ -168,6 +181,10 @@ if __name__ == "__main__":
     trainer.add_callback(es_callback)
 
     trainer.train()
+
+    print(f"- Label encoder mapping:")
+    for i, label in enumerate(label_encoder.classes_):
+        print(f"\t{i}: {label}")
 
     if args.save_test_preds:
         print(f"- Saving predictions to {args.save_test_preds}")
